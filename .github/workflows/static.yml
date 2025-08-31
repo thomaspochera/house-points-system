@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Saint Thomas English Medium School House Points System - Secure</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      text-align: center;
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                  url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1") no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+    }
+    h2 { margin-top: 20px; font-size: 26px; text-shadow: 2px 2px 6px black; }
+    h3 { margin-bottom: 15px; text-shadow: 1px 1px 5px black; }
+    .page {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      margin: 20px auto;
+      width: 60%;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    label { font-weight: bold; }
+    input, select {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      margin: 5px 0;
+      width: 200px;
+      text-align: center;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    button:hover { transform: scale(1.05); }
+    .hidden { display: none; }
+    .house-summary {
+      border: 2px solid white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+    ul { text-align: left; margin: auto; width: 70%; list-style-type: none; padding: 0; }
+    ul li {
+      background: rgba(255,255,255,0.15);
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .footer {
+      position: fixed;
+      bottom: 5px;
+      right: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: rgba(255,255,255,0.8);
+    }
+    @media print {
+      body { margin: 10mm; background: white; color: black; }
+      .no-print { display: none; }
+      #dashboard { transform: scale(0.9); transform-origin: top left; }
+      @page { size: A4 portrait; margin: 10mm; }
+      .footer {
+        position: fixed;
+        bottom: 5px;
+        right: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>🏫 Saint Thomas English Medium School <br> House Points System </h2>
+
+  <div id="loginPage" class="page">
+    <h3>🔐 Login</h3>
+    <label>Username:</label><br>
+    <input type="text" id="username"><br><br>
+    <label>Password:</label><br>
+    <input type="password" id="password"><br><br>
+    <button onclick="login()">Login</button>
+    <p id="loginMsg" style="color:yellow;"></p>
+    <hr>
+    <button onclick="viewScoreSheet()">📊 Score Sheet (View Only)</button>
+  </div>
+
+  <div id="nav" class="hidden no-print">
+    <button onclick="showPage('main')">➕ Add/Deduct</button>
+    <button onclick="showPage('history')">📜 History</button>
+    <button onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button id="resetBtn" onclick="resetScores()" style="display:none;">♻ Reset Scores</button>
+    <button id="changePwdBtn" onclick="showPage('changePwd')" style="display:none;">🔑 Change Passwords</button>
+    <button id="changeNameBtn" onclick="showPage('changeName')" style="display:none;">✏ Change Usernames</button>
+    <button class="no-print" onclick="exportHistory()">💾 Export History</button>
+    <button onclick="logout()">🚪 Logout</button>
+    <p id="resetMsg" style="color:yellow; font-weight:bold; margin-top:10px;"></p>
+  </div>
+
+  <div id="main" class="page hidden">
+    <h3>Add or Deduct Points</h3>
+    <label>Choose House: </label><br>
+    <select id="houseSelect">
+      <option value="Red">Red</option>
+      <option value="Blue">Blue</option>
+      <option value="Green">Green</option>
+      <option value="Yellow">Yellow</option>
+    </select><br><br>
+    <label>Points: </label><br>
+    <input type="number" id="points" value="10"><br><br>
+    <button onclick="addPoints()">➕ Add</button>
+    <button onclick="deductPoints()">➖ Deduct</button>
+    <p id="actionMsg" style="color:yellow; font-weight:bold; margin-top:10px;"></p>
+  </div>
+
+  <div id="history" class="page hidden">
+    <h3>📜 Activity History</h3>
+    <ul id="historyList"></ul>
+  </div>
+
+  <div id="dashboard" class="page hidden">
+    <h3>📊 Dashboard</h3>
+    <button class="no-print" onclick="printDashboard()">🖨 Print Dashboard</button><br><br>
+    <canvas id="barChart"></canvas>
+    <div id="houseDetails"></div>
+    <br>
+    <button class="no-print" onclick="backToLogin()">🔙 Back to Login</button>
+  </div>
+
+  <div id="changePwd" class="page hidden">
+    <h3>🔑 Change User Passwords (Admin Only)</h3>
+    <label>Select User:</label><br>
+    <select id="userSelect">
+      <option value="admin">admin</option>
+      <option value="pet1">pet1</option>
+      <option value="pet2">pet2</option>
+      <option value="pet3">pet3</option>
+    </select><br><br>
+    <label>New Password:</label><br>
+    <input type="password" id="newPwd"><br><br>
+    <button onclick="changePassword()">✅ Update Password</button>
+    <p id="pwdMsg" style="color:yellow;"></p>
+  </div>
+
+  <div id="changeName" class="page hidden">
+    <h3>✏ Change Usernames (Admin Only)</h3>
+    <label>Select User:</label><br>
+    <select id="nameUserSelect">
+      <option value="admin">admin</option>
+      <option value="pet1">pet1</option>
+      <option value="pet2">pet2</option>
+      <option value="pet3">pet3</option>
+    </select><br><br>
+    <label>New Username:</label><br>
+    <input type="text" id="newUname"><br><br>
+    <button onclick="changeUsername()">✅ Update Username</button>
+    <p id="unameMsg" style="color:yellow;"></p>
+  </div>
+
+  <div class="footer">©deepak.kpoovatholil@gmail.com</div>
+
+  <script>
+    const users = {
+      "admin": { password: "admin123", role: "admin" },
+      "pet1": { password: "pet111", role: "pet" },
+      "pet2": { password: "pet222", role: "pet" },
+      "pet3": { password: "pet333", role: "pet" }
+    };
+
+    let currentUser = null;
+    let houses = { "Red": { score: 0, gained: 0, lost: 0 },
+                   "Blue": { score: 0, gained: 0, lost: 0 },
+                   "Green": { score: 0, gained: 0, lost: 0 },
+                   "Yellow": { score: 0, gained: 0, lost: 0 }};
+    let history = [];
+    let lastState = null;
+    let undoTimeout = null;
+
+    const houseColors = { "Red": "#e74c3c", "Blue": "#3498db", "Green": "#2ecc71", "Yellow": "#f1c40f" };
+
+    const ctx = document.getElementById("barChart");
+    const barChart = new Chart(ctx, {
+      type: "bar",
+      data: { labels: Object.keys(houses),
+              datasets: [{ label: "Net House Points",
+                           data: Object.values(houses).map(h => h.score),
+                           backgroundColor: Object.values(houseColors) }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    function saveData() {
+      localStorage.setItem("houses", JSON.stringify(houses));
+      localStorage.setItem("history", JSON.stringify(history));
+      localStorage.setItem("users", JSON.stringify(users));
+    }
+
+    function loadData() {
+      const savedHouses = JSON.parse(localStorage.getItem("houses"));
+      const savedHistory = JSON.parse(localStorage.getItem("history"));
+      const savedUsers = JSON.parse(localStorage.getItem("users"));
+      if (savedHouses) houses = savedHouses;
+      if (savedHistory) history = savedHistory;
+      if (savedUsers) Object.assign(users, savedUsers);
+      updateDashboard();
+      document.getElementById("historyList").innerHTML =
+        history.map(h => `<li>${h}</li>`).join("");
+    }
+
+    function login() {
+      const uname = document.getElementById("username").value.toLowerCase();
+      const pwd = document.getElementById("password").value;
+      if (users[uname] && users[uname].password === pwd) {
+        currentUser = { name: uname, role: users[uname].role };
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("nav").classList.remove("hidden");
+        showPage("main");
+        if (currentUser.role === "admin") {
+          document.getElementById("resetBtn").style.display = "inline-block";
+          document.getElementById("changePwdBtn").style.display = "inline-block";
+          document.getElementById("changeNameBtn").style.display = "inline-block";
+        } else {
+          document.getElementById("resetBtn").style.display = "none";
+          document.getElementById("changePwdBtn").style.display = "none";
+          document.getElementById("changeNameBtn").style.display = "none";
+        }
+      } else {
+        document.getElementById("loginMsg").innerText = "❌ Invalid login!";
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById("nav").classList.add("hidden");
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById("loginPage").classList.remove("hidden");
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("loginMsg").innerText = "";
+      document.getElementById("resetMsg").innerText = "";
+    }
+
+    function viewScoreSheet() {
+      currentUser = { name: "viewer", role: "viewer" };
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("nav").classList.add("hidden");
+      showPage("dashboard");
+    }
+
+    function backToLogin() {
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById("loginPage").classList.remove("hidden");
+      currentUser = null;
+    }
+
+    function updateDashboard() {
+      barChart.data.datasets[0].data = Object.values(houses).map(h => h.score);
+      barChart.update();
+      let html = "";
+      for (let [house, data] of Object.entries(houses)) {
+        html += `<div class="house-summary">
+            <h4 style="color:${houseColors[house]}">${house} House</h4>
+            <p>✅ Total Points Gained: <b>${data.gained}</b></p>
+            <p>❌ Total Points Lost: <b>${data.lost}</b></p>
+            <p>📊 Net Total: <b>${data.score}</b></p></div>`;
+      }
+      let ranking = Object.entries(houses)
+        .sort((a, b) => b[1].score - a[1].score)
+        .map(([house, data], i) => `<p>${i+1}. <b style="color:${houseColors[house]}">${house}</b> - ${data.score}</p>`)
+        .join("");
+      html += `<div class="house-summary"><h4>🏆 Ranking</h4>${ranking}</div>`;
+      document.getElementById("houseDetails").innerHTML = html;
+    }
+
+    function logActivity(action, house, pts) {
+      const now = new Date().toLocaleString();
+      const msg = `[${now}] (${currentUser.name.toUpperCase()}) ${house} house ${action} ${pts} points. (Net: ${houses[house]?.score ?? "-"})`;
+      history.unshift(msg);
+      document.getElementById("historyList").innerHTML =
+        history.map(h => `<li>${h}</li>`).join("");
+      saveData();
+    }
+
+    function addPoints() {
+      if (currentUser.role === "viewer") return;
+      const house = document.getElementById("houseSelect").value;
+      const pts = parseInt(document.getElementById("points").value);
+      houses[house].score += pts;
+      houses[house].gained += pts;
+      logActivity("gained", house, pts);
+      updateDashboard();
+      document.getElementById("actionMsg").innerText = `✅ ${pts} points added to ${house} House!`;
+    }
+
+    function deductPoints() {
+      if (currentUser.role === "viewer") return;
+      const house = document.getElementById("houseSelect").value;
+      const pts = parseInt(document.getElementById("points").value);
+      houses[house].score -= pts;
+      houses[house].lost += pts;
+      logActivity("lost", house, pts);
+      updateDashboard();
+      document.getElementById("actionMsg").innerText = `⚠ ${pts} points deducted from ${house} House!`;
+    }
+
+    function resetScores() {
+      if (currentUser.role !== "admin") return;
+      lastState = JSON.parse(JSON.stringify(houses));
+      for (let h in houses) {
+        houses[h] = { score: 0, gained: 0, lost: 0 };
+      }
+      logActivity("RESETTED ALL SCORES", "ADMIN", "-");
+      updateDashboard();
+      const msgBox = document.getElementById("resetMsg");
+      msgBox.innerHTML = `♻✅ All scores have been reset successfully! 
+        <button onclick="undoReset()" style="margin-left:10px; padding:2px 8px; font-size:12px; background:#ff9800; border:none; border-radius:5px; color:black; font-weight:bold;">UNDO</button>`;
+      if (undoTimeout) clearTimeout(undoTimeout);
+      undoTimeout = setTimeout(() => {
+        msgBox.innerText = "♻✅ All scores have been reset successfully!";
+        lastState = null;
+      }, 10000);
+    }
+
+    function undoReset() {
+      if (!lastState) return;
+      houses = JSON.parse(JSON.stringify(lastState));
+      updateDashboard();
+      logActivity("UNDO RESET", "ADMIN", "-");
+      document.getElementById("resetMsg").innerText = "↩✅ Reset undone! Scores restored.";
+      lastState = null;
+      if (undoTimeout) clearTimeout(undoTimeout);
+    }
+
+    function changePassword() {
+      if (currentUser.role !== "admin") return;
+      const user = document.getElementById("userSelect").value;
+      const newPwd = document.getElementById("newPwd").value;
+      if (newPwd.trim().length < 4) {
+        document.getElementById("pwdMsg").innerText = "⚠ Password must be at least 4 characters!";
+        return;
+      }
+      users[user].password = newPwd;
+      saveData();
+      document.getElementById("pwdMsg").innerText = `✅ Password for '${user}' updated successfully!`;
+      document.getElementById("newPwd").value = "";
+    }
+
+    function changeUsername() {
+      if (currentUser.role !== "admin") return;
+      const oldUser = document.getElementById("nameUserSelect").value;
+      const newUser = document.getElementById("newUname").value.toLowerCase().trim();
+
+      if (!newUser || users[newUser]) {
+        document.getElementById("unameMsg").innerText = "⚠ Invalid or already existing username!";
+        return;
+      }
+
+      users[newUser] = { ...users[oldUser] };
+      delete users[oldUser];
+
+      saveData();
+      document.getElementById("unameMsg").innerText = `✅ Username '${oldUser}' changed to '${newUser}' successfully!`;
+      document.getElementById("newUname").value = "";
+    }
+
+    function showPage(id) {
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function printDashboard() { window.print(); }
+
+    function exportHistory() {
+      const blob = new Blob([history.join("\n")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "house_points_history.txt";
+      a.click();
+    }
+
+    document.getElementById("houseSelect").addEventListener("change", function() {
+      this.style.color = houseColors[this.value];
+    });
+    document.getElementById("houseSelect").dispatchEvent(new Event("change"));
+    loadData();
+  </script>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBY9OwYj40X8hzl24P3FYj2AqAKUZVxJbg",
+      authDomain: "school-score-board.firebaseapp.com",
+      projectId: "school-score-board",
+      storageBucket: "school-score-board.firebasestorage.app",
+      messagingSenderId: "511447284870",
+      appId: "1:511447284870:web:52b0890d40e610b9e32507"
+    };
+
+    const app = initializeApp(firebaseConfig);
+  </script>
+</body>
+</html>
